@@ -1,0 +1,30 @@
+{
+  "recorded": true,
+  "mission_id": "warmo-3",
+  "connected": false,
+  "memory_updated_at": "2026-10-31T22:32:49.766139+00:00",
+  "updated_at": "2026-10-31T22:32:49.766139+00:00",
+  "error": null,
+  "latest_line": "Pumpkin point-blank, blurry orange plush fills right ~55% of frame and the full height; appears nudged/tilted by contact. Pillar beyond it. Lesson: this run the tank drifted LEFT, not right; operator 'behind you' intel saved the search.",
+  "state": {
+    "driven_cm": "500",
+    "est_heading_deg": "54",
+    "goal": "Find the orange plush pumpkin and bump it. Notes from warmo-1/2: pivot cmd 'left' = physical RIGHT and 'right' = physical LEFT; ~170ms (request 25deg) = ~10deg real, ~190ms (28deg) = ~15deg; tank drifts right when driving; 40cm hop ~ 1ft real; warmo-2 took 6 steps.",
+    "last_bearing_deg": "0.0",
+    "last_distance_cm": "0.0",
+    "last_seen_step": "-1",
+    "phase": "patrolling",
+    "recent_log": "#20 #20 advance 40cm toward pumpkin | #21 #21 look | #22 #22 advance 40cm toward pumpkin | #23 #23 look | #24 #24 advance 40cm toward pumpkin | #25 #25 look | #26 #26 advance 20cm — bump attempt | #27 #27 BUMP CONFIRMED — motors stopped. Mission complete.",
+    "resumes": "1",
+    "search_turned_deg": "0",
+    "sightings": "#8 @198deg: Operator intel: pumpkin is behind. Initiating ~180deg turn. | #9 @198deg: No pumpkin. Long hall w/ row of white pillars, big pillar right-center close, kitchen shelving far left, person by window far right. | #10 @88deg: Kitchen/shelving view again, person at kitchen counter, pillar left. CANDIDATE: small orange blob at floor, far right edge x~462/480 (~28deg physical RIGHT), near right wall/pillar. | #11 @18deg: PUMPKIN (likely): small orange blob at floor x~244/480 (~centered), at base of white pillar left side, in front of kitchen counters. Far. | #12 @48deg: Orange blob x~258/480 (~2deg right), base of pillar left side; growing slightly, still far. People at kitchen. | #13 @48deg: Pumpkin x~260/480 (~2deg right), base of pillar left; still small, far. Holding heading. | #16 @48deg: PUMPKIN CONFIRMED: orange plush at x~282/480 (~5deg right), left base of white pillar. Clearly visible, mid distance. Not correcting right (pillar just right of it + right drift). | #18 @48deg: Pumpkin x~298/480 (~8deg right, drifting further right each hop — tank drifting LEFT this run), at left base of pillar, getting bigger. Correcting physical right. | #21 @54deg: Pumpkin plush (smiling face, green stem) DEAD CENTER x~236/480, left base of pillar. Medium size, closing. Pillar just right — hold heading. | #23 @54deg: Pumpkin centered x~243/480, ~65px wide, left base of pillar. Close now, maybe 2 hops. | #25 @54deg: Pumpkin HUGE, spans x~205-400 (center ~300), half frame width, against pillar. Very close — final short push to bump. | #27 @54deg: Pumpkin point-blank, blurry orange plush fills right ~55% of frame and the full height; appears nudged/tilted by contact. Pillar beyond it. Lesson: this run the tank drifted LEFT, not right; operator 'behind you' intel saved the search.",
+    "step_no": "27"
+  },
+  "camera": {
+    "connected": false,
+    "frozen": true,
+    "recorded": true,
+    "updated_at": null,
+    "error": null
+  }
+}

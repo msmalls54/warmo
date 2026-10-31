@@ -29,9 +29,21 @@ XIAO ESP32-S3 <-- HTTP --> Python tank tools <-- stdio --> Manufact mcp-use v2
 
 ## Local camera page
 
-Open **http://127.0.0.1:18765** after starting the dashboard. It shows refreshed camera photos and saved
-Terse mission state, with no movement controls. The latest line is the **last observation saved to Terse**;
-it updates when the controller records another observation, not with every live Claude comment.
+Try the recorded example with Python alone—no tank, Terse runtime, or extra packages needed:
+
+```sh
+python dashboard/server.py --example
+```
+
+Open **http://127.0.0.1:18765/?example=1**. The **Recorded demo** view pairs a saved `warmo-3` snapshot
+(27 logged steps, one resume) with the tank's recorded pumpkin closeup. It reads bundled files, with no
+requests to the tank or Terse.
+
+<img src="dashboard/example/camera.jpg" alt="Recorded WARMO camera view of the pumpkin" width="240">
+
+For refreshed camera photos and current saved mission state, start the normal page and open
+**http://127.0.0.1:18765**. The latest line is the **last observation saved to Terse**; it updates when
+the controller records another observation, not with every live Claude comment. There are no movement controls.
 
 From the project folder on the prepared Windows laptop:
 
@@ -51,6 +63,8 @@ Replace `TANK_IP` with the XIAO's address and select the saved mission ID you wa
 must point to Python with `durable-actors` installed; set `TERSE_BASE_URL` if its running control plane is
 elsewhere. The laptop must reach the tank on the local network. The page binds only to localhost and sends
 read-only camera/state requests; it does not publish a cloud app or send tank movement commands. Ctrl-C closes it.
+To keep a local camera still on screen, add `--frozen-image PATH_TO_IMAGE.jpg`; that mode skips camera
+requests while continuing to read mission memory. The recorded `--example` mode keeps both sources frozen.
 
 ## Files
 | File | What it is |
