@@ -228,8 +228,10 @@ server = MCPServer(
                   + "WARMO is a camera scout for room patrol and scene observations. "
                   "Use look to observe surroundings before and after each bounded movement. "
                   "Bearing is degrees: negative = a visible landmark is LEFT, positive = RIGHT. "
-                  "For clear-floor demo travel, use demo_move forward/backward for 1000 ms at 50% PWM, "
-                  "then look again; use shorter drives when approaching an object. Demo turns remain capped at 250 ms. "
+                  "Choose each demo_move direction and duration explicitly from the camera view and mission goal. "
+                  "Use longer travel when the visible route is clear and shorter corrections near objects, then look again. "
+                  "There is no preset move duration. The firmware backstop is 1000 ms per move; "
+                  "check scheduled_ms, duration_limited, and ran_ms before recording the result. "
                   "Every move self-stops. Save patrol observations and completed actions to mission memory. "
                   + STEERING_INSTRUCTIONS),
 )
@@ -262,11 +264,13 @@ def connection_status() -> dict[str, Any]:
 
 
 @server.tool()
-def demo_move(direction: str, ms: int | None = None) -> dict[str, Any]:
-    """One bounded demo move at 50% PWM, then stop.
-    Forward/backward default to 1000 ms (50-1000 allowed); left/right default to
-    200 ms (50-250 allowed). Omit ms for the direction's default. Look again after
-    each move; use shorter drives near objects. Web stop may wait for the move to finish.
+def demo_move(direction: str, ms: int) -> dict[str, Any]:
+    """Move forward/backward/left/right at 50% PWM for a model-chosen duration.
+    ms is required: choose a nonnegative duration for this action, not a preset
+    repeated pulse. Zero stops only. The firmware backstop clips requests above
+    1000 ms; the response reports requested_ms, scheduled_ms, duration_limited,
+    and ran_ms. Look again after each move and use shorter corrections near
+    objects. Web stop may wait for the move to finish.
     Announce the action and ensure the owner is ready before using on the real tank."""
     directions = {"forward": (128, 128), "backward": (-128, -128),
                   "left": (-128, 128), "right": (128, -128)}
@@ -274,16 +278,21 @@ def demo_move(direction: str, ms: int | None = None) -> dict[str, Any]:
         if direction not in directions:
             tank.stop()
             raise ValueError("Unknown direction: stopped. Use forward/backward/left/right.")
-        straight = direction in {"forward", "backward"}
-        default_ms, max_ms = (1000, MAX_ADVANCE_MS) if straight else (200, 250)
-        duration = default_ms if ms is None else max(50, min(max_ms, int(ms)))
+        requested = int(ms)
+        if requested < 0:
+            tank.stop()
+            raise ValueError("Duration must be nonnegative: stopped.")
+        duration = min(MAX_ADVANCE_MS, requested)
         left, right = directions[direction]
         try:
-            result = tank.move(left, right, duration)
+            result = (tank.move(left, right, duration) if duration else
+                      {"ran_ms": 0, "stopped_by": "time"})
         finally:
             tank.stop()
         return {"sim": SIM, "mode": "SIM" if SIM else "REAL", "direction": direction,
-                "requested_ms": duration, "duty": 128, **result}
+                "requested_ms": requested, "scheduled_ms": duration,
+                "duration_limited": duration != requested, "firmware_max_ms": MAX_ADVANCE_MS,
+                "duty": 128, **result}
 
 
 @server.tool()

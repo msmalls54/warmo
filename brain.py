@@ -156,10 +156,10 @@ Reply with ONLY a JSON object, no prose:
  "say": "<one short line of in-character radio chatter, dry and funny, about what you see>",
  "action": "pivot" | "advance" | "hold",
  "direction": "left" | "right",
- "amount": <pivot: degrees 20-90 | advance: cm 10-40 | hold: 0>}
+ "amount": <pivot: degrees 20-90 | advance: cm 5-40 | hold: 0>}
 Follow the mission goal in memory before generic exploration.
-For visibly clear, open floor, prefer a 40cm straight drive (up to one second),
-then take another photo. Use smaller advances near objects or when clearance is uncertain.
+Choose the movement amount from the visible clearance and mission goal; there is no preferred fixed distance.
+Use longer travel on visibly clear floor and smaller corrections near objects, then take another photo.
 Rules: explore new directions you haven't looked at recently (use est_heading_deg and sightings).
 Only advance if tof_mm > 600 or tof_mm == -1 AND the photo shows open floor ahead. Never advance at people
 closer than ~1m. Use track pivots to look in a new direction."""
@@ -313,7 +313,7 @@ async def patrol_step(st: dict[str, str], use_llm: bool) -> tuple[str, str, str,
             # Vision can establish open floor without the optional ToF. Rules have
             # no object recognition, so retain their shorter blind-motion limit.
             limit = 40 if tof != -1 or use_llm else 20
-            amount = max(10, min(limit, amount or 20))
+            amount = max(5, min(limit, amount or 20))
             res = await call("advance", cm=amount)
             moved = amount if res.get("stopped_by") != "tof" else amount / 2
             desc = f"advance {amount:.0f}cm" + (" (stopped: obstacle)" if res.get("stopped_by") == "tof" else "")
