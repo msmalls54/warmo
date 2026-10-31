@@ -1,0 +1,15 @@
+{
+  "name": "warmo-manufact-v2-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node desktop.mjs",
+    "check": "node --check desktop.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "mcp-use": "2.12.2",
+    "zod": "4.6.7"
+  }
+}

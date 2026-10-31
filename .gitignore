@@ -1,0 +1,16 @@
+.venv/
+.durable-actors/
+.mypy_cache/
+__pycache__/
+generated/
+.env
+.env.local
+.env.*
+!.env.example
+**/wifi_secrets.h
+node_modules/
+.warmo-data/
+**/build/
+*.bin
+*.elf
+*.map
