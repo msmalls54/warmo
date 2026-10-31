@@ -32,6 +32,21 @@ DESKTOP_STDIO = os.getenv("MCP_TRANSPORT", "streamable-http") == "stdio"
 XIAO_URL = os.getenv("XIAO_URL", "http://192.168.4.1").rstrip("/")
 DRIVE_SPEED = int(os.getenv("DRIVE_SPEED", "180"))      # PWM 0-255 for advance
 PIVOT_SPEED = int(os.getenv("PIVOT_SPEED", "200"))      # PWM 0-255 for pivots
+_pivot_invert = os.getenv("PIVOT_INVERT", "0")
+if _pivot_invert not in ("0", "1"):
+    raise ValueError("PIVOT_INVERT must be exactly 0 or 1")
+PIVOT_INVERT = _pivot_invert == "1"
+PIVOT_INVERT_EFFECTIVE = PIVOT_INVERT and not SIM
+STEERING_DIRECTION_CONTRACT = (
+    "Tool left/right arguments describe physical directions. "
+    "Use the current steering calibration; do not compensate again in prompts or goal notes."
+)
+STEERING_INSTRUCTIONS = (
+    "STEERING CALIBRATION: PIVOT_INVERT=1 is active for REAL mode. "
+    "The hardware boundary already corrects pivot direction once. "
+    "Ignore obsolete mission notes that say left/right turns are inverted; do not flip commands again. "
+    if PIVOT_INVERT_EFFECTIVE else ""
+) + STEERING_DIRECTION_CONTRACT
 # Calibrate these on the venue floor (see README "Calibration"):
 PIVOT_MS_PER_DEG = float(os.getenv("PIVOT_MS_PER_DEG", "6.5"))   # ms of pivot per degree
 ADVANCE_MS_PER_CM = float(os.getenv("ADVANCE_MS_PER_CM", "25"))  # ms of driving per cm
@@ -60,6 +75,10 @@ class RealTank:
         return r.content
 
     def move(self, l: int, r: int, ms: int) -> dict[str, Any]:
+        # Venue calibration belongs at this one physical boundary. Straight
+        # travel and zero outputs keep their original values; SIM never uses it.
+        if PIVOT_INVERT_EFFECTIVE and (l < 0 < r or r < 0 < l):
+            l, r = r, l
         return self._get("/move", l=l, r=r, ms=ms)
 
     def ram(self, ms: int) -> dict[str, Any]:
@@ -197,13 +216,20 @@ def sitrep_now() -> dict[str, Any]:
 
 
 # ------------------------------------------------------------ MCP tools ----
+def steering_calibration() -> dict[str, Any]:
+    return {"pivot_invert_configured": PIVOT_INVERT,
+            "pivot_invert_effective": PIVOT_INVERT_EFFECTIVE,
+            "direction_contract": STEERING_DIRECTION_CONTRACT}
+
+
 server = MCPServer(
     name="warmo-patrol",
     instructions=(("SIMULATION MODE: these tools operate a fake tank, not the physical vehicle. " if SIM else "REAL TANK MODE: these tools control the physical vehicle. ")
                   + "WARMO is a camera scout for room patrol and scene observations. "
                   "Use look to observe surroundings before and after each short movement. "
                   "Bearing is degrees: negative = a visible landmark is LEFT, positive = RIGHT. "
-                  "Every move is short and self-stops. Save patrol observations and completed actions to mission memory."),
+                  "Every move is short and self-stops. Save patrol observations and completed actions to mission memory. "
+                  + STEERING_INSTRUCTIONS),
 )
 
 
@@ -212,6 +238,8 @@ def connection_status() -> dict[str, Any]:
     """Read-only connection check. Explicitly identifies SIM/REAL and WARMO firmware readiness."""
     if isinstance(tank, SimTank):
         return {"sim": True, "mode": "SIM", "ready": True, "xiao_url": None,
+                "pivot_invert_effective": PIVOT_INVERT_EFFECTIVE,
+                "steering_calibration": steering_calibration(),
                 "firmware": {"name": "WARMO", "protocol": 1, "camera_ok": True,
                              "tof_ok": False, "pwm": True, "motors_on": False,
                              "simulated": True}}
@@ -221,10 +249,14 @@ def connection_status() -> dict[str, Any]:
                  and status.get("camera_ok") is True and status.get("pwm") is True
                  and status.get("motors_on") is False)
         return {"sim": False, "mode": "REAL", "ready": ready,
-                "xiao_url": XIAO_URL, "firmware": status}
+                "xiao_url": XIAO_URL, "firmware": status,
+                "pivot_invert_effective": PIVOT_INVERT_EFFECTIVE,
+                "steering_calibration": steering_calibration()}
     except Exception as error:
         return {"sim": False, "mode": "REAL", "ready": False,
-                "xiao_url": XIAO_URL, "firmware": None, "error": str(error)}
+                "xiao_url": XIAO_URL, "firmware": None, "error": str(error),
+                "pivot_invert_effective": PIVOT_INVERT_EFFECTIVE,
+                "steering_calibration": steering_calibration()}
 
 
 @server.tool()
@@ -317,7 +349,8 @@ def look() -> Any:
     return {**metadata, "image_jpeg_b64": encoded}
 
 
-@server.tool()
+@server.tool(description="Spin the tank in place. direction: 'left' or 'right'. degrees: 5-120. "
+             + STEERING_INSTRUCTIONS)
 def pivot(direction: str, degrees: float) -> dict[str, Any]:
     """Spin the tank in place. direction: 'left' or 'right'. degrees: 5-120."""
     deg = max(5.0, min(120.0, abs(float(degrees))))

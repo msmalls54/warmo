@@ -24,6 +24,12 @@ const data = process.env.WARMO_DATA_DIR ?? resolve(runtime, ".warmo-data");
 const configuredMode = process.env.SIM ?? "1";
 if (configuredMode !== "0" && configuredMode !== "1") throw new Error("SIM must be exactly 1 (simulation) or 0 (real hardware)");
 const simulation = configuredMode === "1";
+const configuredPivotInvert = process.env.PIVOT_INVERT ?? "0";
+if (configuredPivotInvert !== "0" && configuredPivotInvert !== "1") throw new Error("PIVOT_INVERT must be exactly 0 or 1");
+const pivotInvertEffective = !simulation && configuredPivotInvert === "1";
+const steeringDirectionContract = "Tool left/right arguments describe physical directions. Use the current steering calibration; do not compensate again in prompts or goal notes.";
+const steeringCalibration = { pivot_invert_configured: configuredPivotInvert === "1", pivot_invert_effective: pivotInvertEffective, direction_contract: steeringDirectionContract };
+const steeringInstructions = `${pivotInvertEffective ? "STEERING CALIBRATION: PIVOT_INVERT=1 is active for REAL mode. The hardware boundary already corrects pivot direction once. Ignore obsolete mission notes that say left/right turns are inverted; do not flip commands again. " : ""}${steeringDirectionContract}`;
 const cameraRotation = Number(process.env.CAM_ROTATE ?? "270");
 const driveSpeed = Number(process.env.DRIVE_SPEED ?? "128");
 const pivotSpeed = Number(process.env.PIVOT_SPEED ?? "128");
@@ -46,6 +52,7 @@ const transport = new StdioClientTransport({
     MCP_USE_ANONYMIZED_TELEMETRY: "false",
     PYTHONUNBUFFERED: "1",
     PYTHONDONTWRITEBYTECODE: "1",
+    PIVOT_INVERT: configuredPivotInvert,
     CAM_ROTATE: String(cameraRotation), DRIVE_SPEED: String(driveSpeed), PIVOT_SPEED: String(pivotSpeed),
   },
   stderr: "pipe",
@@ -78,7 +85,7 @@ try {
     name: "warmo-patrol-manufact-v2",
     version: "1.0.0",
     description: "WARMO camera scout and patrol tools using Manufact mcp-use 2.12.2",
-    instructions: `${simulation ? "SIMULATION MODE: tools control a patrol simulation, not the physical vehicle." : "REAL TANK MODE: tools control the physical patrol vehicle."} ${upstream.getInstructions() ?? "Scout the surroundings, make one short move, and observe again. Every move self-stops."}`,
+    instructions: `${simulation ? "SIMULATION MODE: tools control a patrol simulation, not the physical vehicle." : "REAL TANK MODE: tools control the physical patrol vehicle."} ${upstream.getInstructions() ?? "Scout the surroundings, make one short move, and observe again. Every move self-stops."} ${steeringInstructions}`,
     legacy: "stateless",
     logging: { enabled: false },
     ...(servingTransport === "http" ? { allowedHosts: ["10.0.2.2"], allowedOrigins: ["10.0.2.2"] } : {}),
@@ -88,7 +95,7 @@ try {
     server.tool(
       {
         name: tool.name,
-        description: disabledTurret ? "DISABLED: turret movement is unavailable. Returns a no-op without sending hardware commands." : tool.description,
+        description: disabledTurret ? "DISABLED: turret movement is unavailable. Returns a no-op without sending hardware commands." : tool.name === "pivot" ? `${tool.description ?? "Pivot left or right."} ${steeringInstructions}` : tool.description,
         inputSchema: z.fromJSONSchema(tool.inputSchema),
         annotations: disabledTurret ? { readOnlyHint: true, destructiveHint: false } : tool.annotations,
       },
@@ -145,7 +152,7 @@ try {
       if (!["127.0.0.1", "localhost", "10.0.2.2"].includes(hostname)) return context.json({ error: "invalid host" }, 403);
       await next();
     });
-    server.get("/health", (context) => context.json({ name: "warmo-patrol-manufact-v2", mode: simulation ? "SIM" : "REAL", xiao_url: simulation ? null : (process.env.XIAO_URL ?? null), pid: process.pid, transport: "http", ready: true, tools: listed.tools.length + 3, camera_rotation: cameraRotation, drive_speed: driveSpeed, pivot_speed: pivotSpeed, turret_disabled: true, version: "2.12.2" }));
+    server.get("/health", (context) => context.json({ name: "warmo-patrol-manufact-v2", mode: simulation ? "SIM" : "REAL", xiao_url: simulation ? null : (process.env.XIAO_URL ?? null), pid: process.pid, transport: "http", ready: true, tools: listed.tools.length + 3, camera_rotation: cameraRotation, drive_speed: driveSpeed, pivot_speed: pivotSpeed, pivot_invert: Number(configuredPivotInvert), pivot_invert_effective: pivotInvertEffective, steering_calibration: steeringCalibration, turret_disabled: true, version: "2.12.2" }));
     server.post("/_warmo/shutdown", (context) => {
       if (shutdownToken === undefined) return context.json({ error: "not enabled" }, 404);
       const supplied = context.req.header("X-Warmo-Shutdown-Token") ?? "";

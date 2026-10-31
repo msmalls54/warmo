@@ -50,7 +50,8 @@ configuration. Replace the absolute path for your checkout; use the existing con
         "TERSE_BASE_URL": "http://127.0.0.1:7100",
         "CAM_ROTATE": "270",
         "DRIVE_SPEED": "128",
-        "PIVOT_SPEED": "128"
+        "PIVOT_SPEED": "128",
+        "PIVOT_INVERT": "0"
       }
     }
   }
@@ -65,3 +66,7 @@ This repository does not provision that Linux runtime on Windows.
 Start with `connection_status`, `mission_state`, and `look`. SIM is the default. Set `SIM=0` and `XIAO_URL`
 only for checked hardware with its operator present. Use one controller at a time. Turret movement is a
 disabled no-op; ram is not exposed. The optional ToF sensor can be absent, so obstacle protection may be unavailable.
+
+If observed physical turns are reversed, set `PIVOT_INVERT=1` in this adapter's environment and restart it.
+This corrects real pivot outputs once; SIM stays unchanged. The prepared demo laptop uses this calibration.
+After enabling it, tool left/right mean physical left/right; ignore older mission notes telling the agent to reverse them.

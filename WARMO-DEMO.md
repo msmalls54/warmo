@@ -6,6 +6,8 @@ Desktop is configured for **REAL**, `192.168.137.28`, with drive/pivot duty 128 
 
 Turret control is disabled. Its registered tool returns a no-op without contacting the tank; the patrol prompt and rules use track turns instead. Camera images use `CAM_ROTATE=270`, or **90 degrees counter-clockwise**, in both prepared controller paths.
 
+The laptop's REAL-only steering correction uses `PIVOT_INVERT=1`: tool left/right now mean physical left/right. Ignore obsolete reversal instructions in saved goals, including `warmo-3`; do not compensate twice. Pins and historical memory are unchanged. A physical direction recheck is pending; raw firmware `/move` calls bypass the correction.
+
 ## Simple pumpkin demo
 
 1. Put the pumpkin in the camera's view. Start a fresh real pumpkin mission; Warmo describes the actual pumpkin and approaches with short track moves, stopping nearby.

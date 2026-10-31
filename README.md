@@ -145,6 +145,10 @@ bridge passed read-only checks. The separate `new`/`go` patrol selection remains
 Turret commands are disabled in the patrol prompt, rules, Python MCP tool, v2 adapter, and operator helper.
 The registered tool returns a disabled result without contacting the tank. Camera frames are rotated
 **90 degrees counter-clockwise** (`CAM_ROTATE=270`) in the prepared Desktop and patrol paths.
+The prepared laptop has a REAL-only steering correction (`PIVOT_INVERT=1`): tool `left` and `right`
+mean physical left and right. Ignore older mission notes that say to reverse these commands; do not
+compensate twice. Firmware pins and historical mission state are unchanged. A physical direction
+recheck is pending. Raw firmware `/move` requests bypass this host correction.
 The optional distance sensor may be absent; `/tof` then reports `-1` and no obstacle protection is available.
 
 ## Original autonomous brain (Linux / WSL2)
