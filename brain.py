@@ -158,6 +158,8 @@ Reply with ONLY a JSON object, no prose:
  "direction": "left" | "right",
  "amount": <pivot: degrees 20-90 | advance: cm 10-40 | hold: 0>}
 Follow the mission goal in memory before generic exploration.
+For visibly clear, open floor, prefer a 40cm straight drive (up to one second),
+then take another photo. Use smaller advances near objects or when clearance is uncertain.
 Rules: explore new directions you haven't looked at recently (use est_heading_deg and sightings).
 Only advance if tof_mm > 600 or tof_mm == -1 AND the photo shows open floor ahead. Never advance at people
 closer than ~1m. Use track pivots to look in a new direction."""
@@ -293,7 +295,7 @@ async def patrol_step(st: dict[str, str], use_llm: bool) -> tuple[str, str, str,
                 raise PatrolProviderError(type(e).__name__) from e
         else:  # rules: sweep with track pivots, advance when clear
             if step % 3 == 2 and (tof > SAFE_ADVANCE_MM or tof == -1):
-                d = {"saw": "", "say": "Path clear, moving up.", "action": "advance", "direction": "", "amount": 30}
+                d = {"saw": "", "say": "Path clear, moving up.", "action": "advance", "direction": "", "amount": 40 if tof != -1 else 20}
             else:
                 d = {"saw": "", "say": "Scanning.", "action": "pivot", "direction": "right", "amount": 45}
             d["saw"] = _rules_sighting(view, st)
@@ -308,7 +310,10 @@ async def patrol_step(st: dict[str, str], use_llm: bool) -> tuple[str, str, str,
             turned = amount if direction == "right" else -amount
             desc = f"pivot {direction} {amount:.0f}°"
         elif action == "advance" and (tof > SAFE_ADVANCE_MM or tof == -1):
-            amount = max(10, min(40 if tof != -1 else 20, amount or 20))   # no ToF -> short hops only
+            # Vision can establish open floor without the optional ToF. Rules have
+            # no object recognition, so retain their shorter blind-motion limit.
+            limit = 40 if tof != -1 or use_llm else 20
+            amount = max(10, min(limit, amount or 20))
             res = await call("advance", cm=amount)
             moved = amount if res.get("stopped_by") != "tof" else amount / 2
             desc = f"advance {amount:.0f}cm" + (" (stopped: obstacle)" if res.get("stopped_by") == "tof" else "")

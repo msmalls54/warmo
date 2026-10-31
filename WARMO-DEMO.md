@@ -10,7 +10,7 @@ The laptop's REAL-only steering correction uses `PIVOT_INVERT=1`: tool left/righ
 
 ## Simple pumpkin demo
 
-1. Put the pumpkin in the camera's view. Start a fresh real pumpkin mission; Warmo describes the actual pumpkin and approaches with short track moves, stopping nearby.
+1. Put the pumpkin in the camera's view. Start a fresh real pumpkin mission; Warmo describes the actual pumpkin and approaches with bounded track moves, stopping nearby.
 2. After a printed saved step includes the pumpkin sighting, stop the brain with Ctrl-C. Leave the tank powered.
 3. Run `go` on the same mission. Show `RESUMING`, the saved pumpkin sighting, and continued progress.
 
@@ -54,6 +54,8 @@ Fresh Linux SIM/rules rehearsal: **3 → resume → 5 saved steps**, with three 
 
 ## Claude Desktop starting prompt
 
+After a code update, reconnect WARMO or restart Claude Desktop once to reload its tool behavior and descriptions.
+
 Desktop control is a separate demonstration: it does not start `brain.py`, and a new chat does not itself execute the `new`/`go` restart sequence. Claude was restarted and its 12 tools loaded in REAL mode. [Current Desktop receipt](C:/Users/Small/hw-test/warmo-desktop-runtime/manufact-v2/desktop-real-restart-receipt-20261031T212125335734Z.json). A read-only client using that same configured entry also retrieved the explicitly SIM rehearsal mission at step 5, resume count 1. This confirms the MCP-to-Terse memory bridge; it is not a physical patrol proof. Paste:
 
 ```text
@@ -64,7 +66,7 @@ look {}
 
 Report SIM versus REAL, the saved mission step (or an empty mission), and whether the photo is clear and aimed usefully. Do not move or change memory until Mike explicitly says “go.” If the connection or camera check fails, report it and wait.
 
-After “go,” call mission_start with mission_id="warmo-desktop-demo" and goal="Patrol the demo area and report objects." Announce each action. Use only demo_move with direction="forward", "backward", "left", or "right" and ms=150, one pulse at a time, then stop {} and look {}. If a reply times out, stop the sequence and report uncertainty; do not assume the movement failed.
+After “go,” call mission_start with mission_id="warmo-desktop-demo" and goal="Patrol the demo area and report objects." Announce each action. On visibly clear floor, use demo_move forward/backward with ms=1000 for a full one-second drive, then look {} again. Use shorter drives when approaching objects. For left/right demo turns use ms=200 (250ms maximum). Keep one move at a time; every move self-stops. If a reply times out, stop the sequence and report uncertainty; do not assume the movement failed.
 
 After each acknowledged completed step, use mission_record_patrol with that same mission_id, the action, and what you actually saw. Use turned_deg=0 and moved_cm=0 when changes were not measured; do not invent distance or heading changes. Do not start another controller. Roast objects, never people's appearance. For the pumpkin mission, find and approach without touching it.
 ```
@@ -75,3 +77,4 @@ After each acknowledged completed step, use mission_record_patrol with that same
 - Real camera transport and an upright 270-degree host rotation were used during the live MCP patrol. The current camera view must still show the actual pumpkin before the target demo. An earlier HTTP pause recovered after closing a camera tab; the cause remains unproven. [HTTP diagnosis](C:/Users/Small/hw-test/warmo-firmware/wifi-http-diagnosis-20261031.md).
 - Terse stores **application state**, not the model's hidden thoughts. The actor retains 12 sightings and 20 actions; `state()` exposes the latest eight actions. Heading and travel are estimates, not a measured map.
 - A movement acknowledgement and its memory write are not atomic. A lost acknowledgement can repeat a bounded pulse on retry. The restart proof deliberately stops after a confirmed saved step. HTTP `stop` can wait behind an active firmware handler; disconnecting the separate motor battery is the physical stop.
+- Demo straight drives now default to one second at the same 50% PWM; explicit 50–1000ms drives are supported. Camera-guided patrol can request 40cm without ToF, with a fresh photo before each decision; rules without ToF retain a 20cm cap. Distance remains an estimate. Longer continuous runs need a firmware change beyond its current one-second `/move` limit. This software change has not yet been physically checked.

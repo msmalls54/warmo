@@ -226,9 +226,11 @@ server = MCPServer(
     name="warmo-patrol",
     instructions=(("SIMULATION MODE: these tools operate a fake tank, not the physical vehicle. " if SIM else "REAL TANK MODE: these tools control the physical vehicle. ")
                   + "WARMO is a camera scout for room patrol and scene observations. "
-                  "Use look to observe surroundings before and after each short movement. "
+                  "Use look to observe surroundings before and after each bounded movement. "
                   "Bearing is degrees: negative = a visible landmark is LEFT, positive = RIGHT. "
-                  "Every move is short and self-stops. Save patrol observations and completed actions to mission memory. "
+                  "For clear-floor demo travel, use demo_move forward/backward for 1000 ms at 50% PWM, "
+                  "then look again; use shorter drives when approaching an object. Demo turns remain capped at 250 ms. "
+                  "Every move self-stops. Save patrol observations and completed actions to mission memory. "
                   + STEERING_INSTRUCTIONS),
 )
 
@@ -260,8 +262,11 @@ def connection_status() -> dict[str, Any]:
 
 
 @server.tool()
-def demo_move(direction: str, ms: int = 200) -> dict[str, Any]:
-    """One gentle demo pulse: forward/backward/left/right, 50% PWM, 50-250 ms, then stop.
+def demo_move(direction: str, ms: int | None = None) -> dict[str, Any]:
+    """One bounded demo move at 50% PWM, then stop.
+    Forward/backward default to 1000 ms (50-1000 allowed); left/right default to
+    200 ms (50-250 allowed). Omit ms for the direction's default. Look again after
+    each move; use shorter drives near objects. Web stop may wait for the move to finish.
     Announce the action and ensure the owner is ready before using on the real tank."""
     directions = {"forward": (128, 128), "backward": (-128, -128),
                   "left": (-128, 128), "right": (128, -128)}
@@ -269,7 +274,9 @@ def demo_move(direction: str, ms: int = 200) -> dict[str, Any]:
         if direction not in directions:
             tank.stop()
             raise ValueError("Unknown direction: stopped. Use forward/backward/left/right.")
-        duration = max(50, min(250, int(ms)))
+        straight = direction in {"forward", "backward"}
+        default_ms, max_ms = (1000, MAX_ADVANCE_MS) if straight else (200, 250)
+        duration = default_ms if ms is None else max(50, min(max_ms, int(ms)))
         left, right = directions[direction]
         try:
             result = tank.move(left, right, duration)
