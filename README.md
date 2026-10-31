@@ -2,6 +2,8 @@
 
 **Stop the brain. Keep the mission.**
 
+**[Watch the demo](https://youtu.be/PsJ0TtAfg-c)** — The Brain Restarts. The Mission Remembers.
+
 Waymo drives you home. **Warmo patrols.**
 
 WARMO connects Claude to a modified Heng Long M1A2 Abrams through **Manufact mcp-use v2**.
