@@ -14,7 +14,7 @@ A fresh chat or brain process can load that same mission's goal, sightings and p
 and completing the run at **27 logged steps**. The earlier capture reports a saved pumpkin sighting and
 notes about inverted turns and rightward drift. Distances and bearings in these reports are controller estimates.
 
-[Demo and operator guide](WARMO-DEMO.md) · [Run the Manufact v2 connector](manufact-v2/README.md)
+[Local camera page](#local-camera-page) · [Demo and operator guide](WARMO-DEMO.md) · [Run the Manufact v2 connector](manufact-v2/README.md)
 
 Real camera transport and track movement have been tested on the XIAO ESP32-S3 Sense. Turret control is
 currently disabled; the optional ToF sensor was skipped. Use the demo guide's supervised movement procedure.
@@ -27,12 +27,38 @@ XIAO ESP32-S3 <-- HTTP --> Python tank tools <-- stdio --> Manufact mcp-use v2
                                                   Terse: named Mission actor
 ```
 
+## Local camera page
+
+Open **http://127.0.0.1:18765** after starting the dashboard. It shows refreshed camera photos and saved
+Terse mission state, with no movement controls. The latest line is the **last observation saved to Terse**;
+it updates when the controller records another observation, not with every live Claude comment.
+
+From the project folder on the prepared Windows laptop:
+
+```powershell
+& "$env:USERPROFILE\hw-test\warmo-desktop-runtime\.venv\Scripts\python.exe" `
+  dashboard/server.py --xiao-url http://TANK_IP --mission warmo-3 `
+  --memory-python "$env:USERPROFILE\hw-test\warmo-terse-runtime\.venv\Scripts\python.exe"
+```
+
+For a Linux checkout with project dependencies installed:
+
+```sh
+uv run python dashboard/server.py --xiao-url http://TANK_IP --mission warmo-3 --memory-python .venv/bin/python
+```
+
+Replace `TANK_IP` with the XIAO's address and select the saved mission ID you want to view. `--memory-python`
+must point to Python with `durable-actors` installed; set `TERSE_BASE_URL` if its running control plane is
+elsewhere. The laptop must reach the tank on the local network. The page binds only to localhost and sends
+read-only camera/state requests; it does not publish a cloud app or send tank movement commands. Ctrl-C closes it.
+
 ## Files
 | File | What it is |
 |---|---|
 | `src/actors.py` | Terse `Mission` actor: phase, step count, heading, sightings, action log |
 | `tank_mcp.py` | Scout/patrol MCP tools: `look`, `get_sitrep`, `pivot`, `advance`, `stop`, plus connection/demo helpers. Registered `turret` is a disabled no-op. `SIM=1` = fake tank |
 | `manufact-v2/` | Portable Manufact mcp-use 2.12.2 connector: stdio for Desktop or local HTTP for the patrol loop; delegates tank behavior to the Python tools |
+| `dashboard/` | Local read-only camera page with saved Terse mission state and the latest saved observation |
 | `brain.py` | Patrol agent loop. `POLICY=llm` or `rules`; provider failures fall back to rules, link failures retry the same tool call |
 | `new.ps1` / `go.ps1` | Prepared Windows launchers: fresh mission / resume saved mission |
 | `firmware/warmo_firmware/warmo_firmware.ino` | XIAO HTTP firmware: `/capture /move /ram /tof /stop /turret` |
